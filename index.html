@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Fault Diagnosis & Repair System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent: '#7C3AED',
+            'accent-hover': '#6D28D9'
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-white text-slate-900 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- Navigation Bar -->
+  <header class="border-b border-slate-200 bg-white sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('diagnostics')">
+        <div class="bg-black text-white p-2 rounded">
+          <i data-lucide="cpu" class="w-5 h-5"></i>
+        </div>
+        <span class="font-bold text-lg tracking-tight">FixAI Studio</span>
+      </div>
+
+      <!-- Navigation Bar (Always visible) -->
+      <nav id="nav-menu" class="flex items-center space-x-4 md:space-x-6 text-sm font-medium">
+        <button onclick="switchTab('diagnostics')" class="hover:text-accent flex items-center gap-1.5"><i data-lucide="sparkles" class="w-4 h-4"></i> AI Diagnostics</button>
+        <button onclick="switchTab('intake')" class="hover:text-accent flex items-center gap-1.5"><i data-lucide="plus-circle" class="w-4 h-4"></i> Intake</button>
+        <button onclick="switchTab('tickets')" class="hover:text-accent flex items-center gap-1.5"><i data-lucide="wrench" class="w-4 h-4"></i> Job Cards</button>
+        <button onclick="switchTab('inventory')" class="hover:text-accent flex items-center gap-1.5"><i data-lucide="box" class="w-4 h-4"></i> Inventory</button>
+        <button onclick="switchTab('billing')" class="hover:text-accent flex items-center gap-1.5"><i data-lucide="receipt" class="w-4 h-4"></i> Billing</button>
+        
+        <!-- Admin Exclusive Link -->
+        <button id="nav-admin" onclick="switchTab('admin')" class="hidden hover:text-accent text-accent font-semibold flex items-center gap-1.5"><i data-lucide="shield-check" class="w-4 h-4"></i> Admin Panel</button>
+      </nav>
+
+      <!-- Auth Actions -->
+      <div class="flex items-center space-x-3">
+        <div id="user-info" class="hidden text-xs text-right">
+          <p id="user-email" class="font-bold text-slate-800"></p>
+          <span id="user-role-badge" class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase text-[10px] tracking-wider"></span>
+        </div>
+        <button id="auth-btn" onclick="toggleAuthModal()" class="bg-black text-white px-4 py-2 rounded text-sm font-medium hover:bg-slate-800 transition">Sign In</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+
+    <!-- Auth View Modal/Section -->
+    <section id="view-auth" class="hidden max-w-md mx-auto my-12 border border-slate-200 rounded-lg p-6 bg-white shadow-sm">
+      <h2 id="auth-title" class="text-xl font-bold mb-2 text-center">Sign In</h2>
+      <p class="text-xs text-slate-500 mb-6 text-center">Sign in to save records, access database storage, and view job tickets</p>
+      
+      <form id="auth-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase mb-1 text-slate-600">Email Address</label>
+          <input type="email" id="auth-email" required class="w-full border border-slate-300 rounded p-2.5 text-sm focus:outline-none focus:border-accent">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase mb-1 text-slate-600">Password</label>
+          <input type="password" id="auth-password" required class="w-full border border-slate-300 rounded p-2.5 text-sm focus:outline-none focus:border-accent">
+        </div>
+        <button type="submit" id="auth-submit-btn" class="w-full bg-black text-white py-2.5 rounded font-medium text-sm hover:bg-slate-800 transition">Sign In</button>
+      </form>
+
+      <div class="mt-4 text-center">
+        <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-xs text-slate-600 underline hover:text-black">Need an account? Register</button>
+      </div>
+    </section>
+
+    <!-- 1. AI Diagnostics View (Default Landing Page) -->
+    <section id="view-diagnostics" class="space-y-6">
+      <div class="border-b border-slate-200 pb-4 flex justify-between items-end">
+        <div>
+          <h1 class="text-2xl font-bold">AI Fault Diagnostic Engine</h1>
+          <p class="text-sm text-slate-500">Run symptom analysis to compute probability distributions and repair guides</p>
+        </div>
+        <!-- Guest Notice Banner -->
+        <div id="guest-try-badge" class="text-xs px-3 py-1 bg-purple-50 border border-purple-200 text-accent font-semibold rounded">
+          Guest Mode: <span id="guest-tries-count">1</span> Free Diagnosis Left
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Input Form -->
+        <div class="border border-slate-200 rounded-lg p-4 space-y-4 md:col-span-1">
+          <h3 class="font-semibold text-sm border-b pb-2">Diagnostic Inputs</h3>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Device Category</label>
+            <select id="diag-device-type" class="w-full border border-slate-300 rounded p-2 text-sm">
+              <option value="Laptop">Laptop / Computer</option>
+              <option value="Smartphone">Smartphone / Tablet</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Observed Symptoms & Error Codes</label>
+            <textarea id="diag-symptoms" rows="5" placeholder="e.g. No display, 3 beep codes, thermal throttling, charging LED blinks..." class="w-full border border-slate-300 rounded p-2 text-sm"></textarea>
+          </div>
+          <button id="run-ai-btn" onclick="triggerAIDiagnosis()" class="w-full bg-accent text-white py-2.5 rounded font-medium text-sm hover:bg-accent-hover flex items-center justify-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4"></i> Run AI Analysis
+          </button>
+        </div>
+
+        <!-- Diagnostic Output -->
+        <div class="border border-slate-200 rounded-lg p-4 md:col-span-2 space-y-4">
+          <h3 class="font-semibold text-sm border-b pb-2">Analysis Results</h3>
+          <div id="ai-output" class="text-slate-500 text-sm italic">
+            Select category, enter symptoms, and click "Run AI Analysis" to view diagnostic output.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Customer & Device Intake View -->
+    <section id="view-intake" class="hidden space-y-6">
+      <div class="border-b border-slate-200 pb-4">
+        <h1 class="text-2xl font-bold">Device Intake & Registration</h1>
+        <p class="text-sm text-slate-500">Register new customer device and document initial physical condition</p>
+      </div>
+
+      <form id="intake-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="border border-slate-200 rounded-lg p-4 space-y-3">
+          <h3 class="font-semibold text-sm border-b pb-2 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4"></i> Customer Details</h3>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Full Name</label>
+            <input type="text" id="cust-name" required class="w-full border border-slate-300 rounded p-2 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Phone Number</label>
+            <input type="tel" id="cust-phone" required class="w-full border border-slate-300 rounded p-2 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Email</label>
+            <input type="email" id="cust-email" class="w-full border border-slate-300 rounded p-2 text-sm">
+          </div>
+        </div>
+
+        <div class="border border-slate-200 rounded-lg p-4 space-y-3">
+          <h3 class="font-semibold text-sm border-b pb-2 flex items-center gap-2"><i data-lucide="smartphone" class="w-4 h-4"></i> Device Details</h3>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold mb-1">Device Type</label>
+              <select id="device-type" class="w-full border border-slate-300 rounded p-2 text-sm">
+                <option value="Laptop">Laptop</option>
+                <option value="Smartphone">Smartphone</option>
+                <option value="Desktop PC">Desktop PC</option>
+                <option value="Tablet">Tablet</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold mb-1">Brand & Model</label>
+              <input type="text" id="device-model" required placeholder="e.g. Dell XPS 15 / iPhone 12" class="w-full border border-slate-300 rounded p-2 text-sm">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Serial Number / IMEI</label>
+            <input type="text" id="device-serial" required class="w-full border border-slate-300 rounded p-2 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Intake Condition & Reported Faults</label>
+            <textarea id="device-symptoms" rows="3" required placeholder="Describe issues, scratches, power status..." class="w-full border border-slate-300 rounded p-2 text-sm"></textarea>
+          </div>
+        </div>
+
+        <div class="md:col-span-2 flex justify-end">
+          <button type="submit" class="bg-black text-white px-6 py-2.5 rounded font-medium text-sm hover:bg-slate-800">Register Device Intake</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 3. Job Cards View -->
+    <section id="view-tickets" class="hidden space-y-6">
+      <div class="border-b border-slate-200 pb-4 flex justify-between items-center">
+        <div>
+          <h1 class="text-2xl font-bold">Job Cards & Lifecycle Tracking</h1>
+          <p class="text-sm text-slate-500">Monitor active repair progression and update technician logs</p>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto border border-slate-200 rounded-lg">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-semibold text-slate-600">
+            <tr>
+              <th class="p-3">Ticket ID</th>
+              <th class="p-3">Customer</th>
+              <th class="p-3">Device</th>
+              <th class="p-3">Status</th>
+              <th class="p-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tickets-table-body" class="divide-y divide-slate-200">
+            <!-- Dynamic Ticket Rows -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. Inventory View -->
+    <section id="view-inventory" class="hidden space-y-6">
+      <div class="border-b border-slate-200 pb-4 flex justify-between items-center">
+        <div>
+          <h1 class="text-2xl font-bold">Spare Parts Inventory</h1>
+          <p class="text-sm text-slate-500">Track component stock levels, compatibility, and pricing</p>
+        </div>
+        <button id="add-stock-btn" onclick="openAddStockModal()" class="hidden bg-black text-white px-4 py-2 rounded text-sm font-medium hover:bg-slate-800 flex items-center gap-1.5">
+          <i data-lucide="plus" class="w-4 h-4"></i> Add Stock Item
+        </button>
+      </div>
+
+      <div class="overflow-x-auto border border-slate-200 rounded-lg">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-semibold text-slate-600">
+            <tr>
+              <th class="p-3">Item Name</th>
+              <th class="p-3">Compatible Devices</th>
+              <th class="p-3">In Stock</th>
+              <th class="p-3">Selling Price (KES)</th>
+              <th class="p-3">Status</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-table-body" class="divide-y divide-slate-200">
+            <!-- Dynamic Inventory Rows -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 5. Billing View -->
+    <section id="view-billing" class="hidden space-y-6">
+      <div class="border-b border-slate-200 pb-4">
+        <h1 class="text-2xl font-bold">Billing & Invoicing</h1>
+        <p class="text-sm text-slate-500">Generate itemized bills and process customer payments</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="border border-slate-200 rounded-lg p-4 space-y-3">
+          <h3 class="font-semibold text-sm border-b pb-2">Generate Invoice</h3>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Select Active Ticket</label>
+            <select id="bill-ticket-select" class="w-full border border-slate-300 rounded p-2 text-sm"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Labor Charge (KES)</label>
+            <input type="number" id="bill-labor" value="0" class="w-full border border-slate-300 rounded p-2 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1">Parts Charge (KES)</label>
+            <input type="number" id="bill-parts" value="0" class="w-full border border-slate-300 rounded p-2 text-sm">
+          </div>
+          <button onclick="calculateInvoiceTotal()" class="w-full border border-black text-black py-2 rounded text-sm font-medium hover:bg-slate-50">Calculate Total</button>
+        </div>
+
+        <div class="border border-slate-200 rounded-lg p-4 space-y-4">
+          <h3 class="font-semibold text-sm border-b pb-2">Invoice Preview</h3>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between"><span>Subtotal:</span><span id="inv-subtotal">KES 0</span></div>
+            <div class="flex justify-between font-bold text-base border-t pt-2"><span>Total Amount:</span><span id="inv-total">KES 0</span></div>
+          </div>
+          
+          <button id="paystack-pay-btn" onclick="initiatePaystackPayment()" class="w-full bg-black text-white py-2.5 rounded font-medium text-sm hover:bg-slate-800 flex items-center justify-center gap-2">
+            <i data-lucide="credit-card" class="w-4 h-4"></i> Pay with Paystack
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Admin Panel View (Admin Only) -->
+    <section id="view-admin" class="hidden space-y-6">
+      <div class="border-b border-slate-200 pb-4">
+        <h1 class="text-2xl font-bold">Super Admin Dashboard</h1>
+        <p class="text-sm text-slate-500">System maintenance, user moderation, and financial analytics</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="border border-slate-200 p-4 rounded-lg">
+          <p class="text-xs uppercase text-slate-500 font-semibold">Total Revenue</p>
+          <p id="stat-revenue" class="text-2xl font-bold mt-1">KES 0</p>
+        </div>
+        <div class="border border-slate-200 p-4 rounded-lg">
+          <p class="text-xs uppercase text-slate-500 font-semibold">Active Jobs</p>
+          <p id="stat-jobs" class="text-2xl font-bold mt-1">0</p>
+        </div>
+        <div class="border border-slate-200 p-4 rounded-lg">
+          <p class="text-xs uppercase text-slate-500 font-semibold">AI Diagnostics Run</p>
+          <p id="stat-diagnostics" class="text-2xl font-bold mt-1">0</p>
+        </div>
+        <div class="border border-slate-200 p-4 rounded-lg">
+          <p class="text-xs uppercase text-slate-500 font-semibold">Low Stock Alerts</p>
+          <p id="stat-low-stock" class="text-2xl font-bold mt-1 text-red-600">0</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="border border-slate-200 p-4 rounded-lg">
+          <h4 class="text-xs uppercase font-semibold text-slate-500 mb-4">Revenue Trend</h4>
+          <canvas id="chart-revenue"></canvas>
+        </div>
+        <div class="border border-slate-200 p-4 rounded-lg">
+          <h4 class="text-xs uppercase font-semibold text-slate-500 mb-4">Common Device Fault Distribution</h4>
+          <canvas id="chart-faults"></canvas>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-auto">
+    &copy; 2026 AI Fault Diagnosis & Repair Management System. All rights reserved.
+  </footer>
+
+  <!-- Modular Scripts -->
+  <script type="module" src="supabaseClient.js"></script>
+  <script type="module" src="payment.js"></script>
+  <script type="module" src="ai-service.js"></script>
+  <script type="module" src="app.js"></script>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

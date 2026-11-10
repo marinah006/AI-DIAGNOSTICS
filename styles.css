@@ -1,0 +1,104 @@
+/* styles.css - Custom Styling & Minimal Visual Enhancements */
+
+/* Root Variables */
+:root {
+  --accent-color: #7C3AED;
+  --accent-hover: #6D28D9;
+  --accent-light: rgba(124, 58, 237, 0.1);
+  --border-color: #E2E8F0;
+}
+
+/* Base Adjustments */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #FFFFFF;
+  color: #0F172A;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F8FAFC;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Form Controls & Highlighting */
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 2px var(--accent-light) !important;
+  outline: none;
+}
+
+/* Button Focus Effects */
+button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Table Enhancements */
+table tbody tr {
+  transition: background-color 0.15s ease-in-out;
+}
+
+/* Status Badges */
+.badge-accent {
+  background-color: var(--accent-light);
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+/* AI Output Box Formatting */
+#ai-output {
+  min-height: 180px;
+  line-height: 1.6;
+}
+
+#ai-output h4 {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #0F172A;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+#ai-output ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+#ai-output ol {
+  list-style-type: decimal;
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Micro Animations */
+@keyframes pulse-light {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse-light 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
